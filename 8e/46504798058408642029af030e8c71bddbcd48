@@ -1,0 +1,26 @@
+LICENSE
+  h_30b36d78271bb4 1-21
+README.md
+  h_30b36d78271bb4 1-79
+background.js
+  h_30b36d78271bb4 1-443
+manifest.json
+  h_30b36d78271bb4 1-39
+popup.css
+  h_30b36d78271bb4 1-125
+popup.html
+  h_30b36d78271bb4 1-159
+popup.js
+  h_30b36d78271bb4 1-632
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "8e46504798058408642029af030e8c71bddbcd48",
+  "prompts": {},
+  "humans": {
+    "h_30b36d78271bb4": {
+      "author": "Robin L. M. Cheung, MBA <robin@robin.mba>"
+    }
+  }
+}
