@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voice-ish</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main id="app" class="app" aria-live="polite">
+      <section id="loadingView" class="center-view">
+        <div class="spinner" aria-label="Loading"></div>
+      </section>
+
+      <section id="setupView" class="setup-view hidden">
+        <div class="setup-mark">V</div>
+        <h1>Voice-ish</h1>
+        <p class="lede">The little VoIP.ms messenger that lives in your toolbar.</p>
+
+        <div class="ip-card">
+          <span>Allow-list this browser’s public IP in VoIP.ms</span>
+          <strong id="publicIp">Checking…</strong>
+          <button id="retryIpButton" class="link-button" type="button">check again</button>
+        </div>
+
+        <form id="connectForm" class="stack">
+          <label>
+            VoIP.ms account email
+            <input id="usernameInput" type="email" autocomplete="username" required placeholder="you@example.com" />
+          </label>
+          <label>
+            API password <small>(not your portal password)</small>
+            <input id="passwordInput" type="password" autocomplete="current-password" required placeholder="API password" />
+          </label>
+          <button id="connectButton" class="primary-button" type="submit">Connect to VoIP.ms</button>
+        </form>
+
+        <p class="security-note">For this quick local build, credentials are stored unencrypted in Chrome’s extension storage. Use a dedicated VoIP.ms API password.</p>
+        <div id="setupError" class="error-box hidden"></div>
+      </section>
+
+      <section id="messengerView" class="messenger hidden">
+        <header class="topbar">
+          <div class="brand"><span>V</span> Voice-ish</div>
+          <div class="top-actions">
+            <button id="syncButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh">↻</button>
+            <button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Settings">⚙</button>
+          </div>
+        </header>
+
+        <div class="workspace">
+          <aside class="threads-pane">
+            <button id="newMessageButton" class="new-message-button" type="button">＋ New message</button>
+            <div id="threadList" class="thread-list"></div>
+            <div id="syncStatus" class="sync-status"></div>
+          </aside>
+
+          <section id="emptyConversation" class="conversation-empty">
+            <div class="empty-bubble">•••</div>
+            <h2>Pick a conversation</h2>
+            <p>Replies stay pinned to the DID that received them.</p>
+          </section>
+
+          <section id="conversationView" class="conversation hidden">
+            <header class="conversation-header">
+              <div>
+                <strong id="contactHeading"></strong>
+                <span id="didHeading" class="did-chip"></span>
+              </div>
+              <small id="routeExplanation">Replies send from this DID</small>
+            </header>
+            <div id="messageList" class="message-list"></div>
+            <form id="composerForm" class="composer">
+              <div id="attachmentTray" class="attachment-tray hidden"></div>
+              <div class="compose-row">
+                <label class="attach-button" title="Attach up to 3 compatible files">
+                  <span>⌕</span>
+                  <input id="attachmentInput" type="file" accept=".jpg,.jpeg,.gif,.png,.mp3,.wav,.mid,.midi,.mp4,.3gp" multiple />
+                </label>
+                <textarea id="messageInput" rows="1" maxlength="2048" placeholder="Type a message"></textarea>
+                <button id="sendButton" class="send-button" type="submit" title="Send" aria-label="Send">➤</button>
+              </div>
+              <div class="compose-meta">
+                <span id="messageMode">SMS</span>
+                <span id="sendKeyHint">Enter to send</span>
+                <span id="characterCount">0 / 160</span>
+              </div>
+              <div id="composerStatus" class="composer-status hidden" role="status" aria-live="polite"></div>
+              <small class="attachment-rules">Video must already be MP4 or 3GP and no larger than 1,200,000 bytes. This build does not convert media.</small>
+            </form>
+          </section>
+        </div>
+      </section>
+
+      <div id="newMessageModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="newMessageTitle">
+        <form id="newMessageForm" class="modal-card">
+          <button class="modal-close" data-close="new" type="button" aria-label="Close">×</button>
+          <h2 id="newMessageTitle">New message</h2>
+          <label>
+            Send from
+            <select id="newDidSelect"></select>
+          </label>
+          <label>
+            To
+            <input id="newContactInput" type="tel" required placeholder="6135550123 or +16135550123" />
+          </label>
+          <p class="route-warning">This creates a DID-locked conversation. Future replies in it will use the same “from” number.</p>
+          <button class="primary-button" type="submit">Open conversation</button>
+        </form>
+      </div>
+
+      <div id="settingsModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <form id="settingsForm" class="modal-card settings-card">
+          <button class="modal-close" data-close="settings" type="button" aria-label="Close">×</button>
+          <h2 id="settingsTitle">Settings</h2>
+          <p id="accountLabel" class="account-label"></p>
+
+          <fieldset>
+            <legend>Messaging DIDs</legend>
+            <div id="didChecklist" class="did-checklist"></div>
+          </fieldset>
+
+          <label>
+            Default DID for new messages
+            <select id="defaultDidSelect"></select>
+          </label>
+          <label>
+            History to retrieve
+            <select id="historyRangeSelect">
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+              <option value="90">Last 90 days</option>
+              <option value="365">Last year</option>
+              <option value="all">All available history</option>
+            </select>
+          </label>
+          <label>
+            Enter key in the message box
+            <select id="enterBehaviorSelect">
+              <option value="send">Enter sends · Shift+Enter makes a new line</option>
+              <option value="newline">Enter makes a new line · Ctrl/⌘+Enter sends</option>
+            </select>
+          </label>
+          <label class="check-row"><input id="pollingCheckbox" type="checkbox" /> Poll every minute</label>
+          <label class="check-row"><input id="notificationsCheckbox" type="checkbox" /> Desktop notifications</label>
+
+          <div class="settings-actions">
+            <button id="disconnectButton" class="danger-button" type="button">Disconnect & erase local data</button>
+            <button class="primary-button" type="submit">Save</button>
+          </div>
+          <div id="settingsError" class="error-box hidden"></div>
+        </form>
+      </div>
+
+      <div id="toast" class="toast hidden"></div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>
