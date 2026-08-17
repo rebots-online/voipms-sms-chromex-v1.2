@@ -3,8 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Voice-ish</title>
+    <title>Voice-ish Web</title>
+    <meta name="theme-color" content="#397cbb" />
+    <meta name="description" content="A small standalone SMS, MMS, and VoxVolley messenger for VoIP.ms." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icons/icon32.png" sizes="32x32" />
     <link rel="stylesheet" href="popup.css" />
+    <link rel="stylesheet" href="web.css" />
   </head>
   <body>
     <main id="app" class="app" aria-live="polite">
@@ -46,8 +51,11 @@
 
       <section id="messengerView" class="messenger hidden">
         <header class="topbar">
-          <div class="brand"><span>V</span> Voice-ish</div>
+          <div class="brand"><span>V</span> Voice-ish <small>+ VoxVolley ‹not™›</small></div>
           <div class="top-actions">
+            <button id="notificationBell" class="icon-button notification-bell" type="button" title="Unread messages" aria-label="Unread messages">
+              <span aria-hidden="true">🔔</span><span id="bellBadge" class="bell-badge hidden">0</span>
+            </button>
             <button id="syncButton" class="icon-button" type="button" title="Refresh" aria-label="Refresh">↻</button>
             <button id="settingsButton" class="icon-button" type="button" title="Settings" aria-label="Settings">⚙</button>
           </div>
@@ -77,12 +85,21 @@
             <div id="messageList" class="message-list"></div>
             <form id="composerForm" class="composer">
               <div id="attachmentTray" class="attachment-tray hidden"></div>
+              <div id="voiceRecordingStatus" class="voice-recording-status hidden" role="status" aria-live="polite">
+                <span class="recording-pulse" aria-hidden="true"></span>
+                <strong>VoxVolley</strong>
+                <span id="voiceRecordingTime">0:00 / 0:20</span>
+                <progress id="voiceRecordingProgress" max="20" value="0" aria-label="Voice recording time"></progress>
+                <span>Tap the microphone to stop and attach.</span>
+                <button id="cancelVoiceButton" type="button">Discard</button>
+              </div>
               <div class="compose-row">
                 <label class="attach-button" title="Attach up to 3 compatible files">
                   <span>⌕</span>
                   <input id="attachmentInput" type="file" accept=".jpg,.jpeg,.gif,.png,.mp3,.wav,.mid,.midi,.mp4,.3gp" multiple />
                 </label>
-                <textarea id="messageInput" rows="1" maxlength="2048" placeholder="Type a message"></textarea>
+                <button id="voiceRecordButton" class="voice-record-button" type="button" title="Record a VoxVolley voice clip" aria-label="Record a short voice message" aria-pressed="false">🎙</button>
+                <textarea id="messageInput" rows="1" maxlength="2048" placeholder="Type a message—or volley your voice"></textarea>
                 <button id="sendButton" class="send-button" type="submit" title="Send" aria-label="Send">➤</button>
               </div>
               <div class="compose-meta">
@@ -125,6 +142,20 @@
             <div id="didChecklist" class="did-checklist"></div>
           </fieldset>
 
+          <fieldset class="vox-roadmap">
+            <legend>VoxVolley ‹not™›</legend>
+            <p><strong>Now:</strong> record and exchange short voice clips, play them inline, and read any text bubble aloud with the device’s system voice.</p>
+            <details>
+              <summary>Roadmap: captions and familiar voices</summary>
+              <ul>
+                <li>Local or hosted transcription for searchable voice messages and live call captions.</li>
+                <li>Word-timed transcripts for two-direction “karaoke” replay.</li>
+                <li>Optional Voice Portraits: a friend or family member records calibration material plus a separate, explicit consent statement so their own texts can be read in their familiar synthetic voice.</li>
+                <li>Every portrait remains labelled as synthetic, purpose-limited, revocable, and deletable by the person whose voice it is.</li>
+              </ul>
+            </details>
+          </fieldset>
+
           <label>
             Default DID for new messages
             <select id="defaultDidSelect"></select>
@@ -146,8 +177,20 @@
               <option value="newline">Enter makes a new line · Ctrl/⌘+Enter sends</option>
             </select>
           </label>
+          <label>
+            Skin
+            <select id="themeSelect">
+              <option value="classic">Classic Voice</option>
+              <option value="night">Night Volley</option>
+              <option value="contrast">High contrast</option>
+              <option value="hyssopopotamus">Hyssopopotamus</option>
+            </select>
+          </label>
           <label class="check-row"><input id="pollingCheckbox" type="checkbox" /> Poll every minute</label>
           <label class="check-row"><input id="notificationsCheckbox" type="checkbox" /> Desktop notifications</label>
+          <label class="check-row"><input id="toastCheckbox" type="checkbox" /> In-window notification toast</label>
+          <label class="check-row"><input id="flashCheckbox" type="checkbox" /> Flash the bell for new messages</label>
+          <label class="check-row"><input id="soundCheckbox" type="checkbox" /> Play a short notification chime</label>
 
           <div class="settings-actions">
             <button id="disconnectButton" class="danger-button" type="button">Sign out & erase local data</button>
@@ -159,6 +202,9 @@
 
       <div id="toast" class="toast hidden"></div>
     </main>
+    <script src="web-chrome-shim.js"></script>
+    <script src="background.js"></script>
     <script src="popup.js"></script>
+    <script src="web-bootstrap.js"></script>
   </body>
 </html>

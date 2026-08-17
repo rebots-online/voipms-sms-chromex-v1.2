@@ -1,4 +1,4 @@
-/* Voice-ish for VoIP.ms — intentionally dependency-free. */
+/* Voice-ish Web for VoIP.ms — shared extension logic, dependency-free. */
 
 const DEFAULT_SERVICE_URL = "http://127.0.0.1:8790";
 const MESSAGE_LIMIT = 2000;
@@ -14,6 +14,10 @@ const DEFAULT_CONFIG = {
   sendOnEnter: true,
   pollingEnabled: true,
   notificationsEnabled: true,
+  toastEnabled: true,
+  flashEnabled: true,
+  soundEnabled: false,
+  theme: "classic",
   configured: false,
 };
 
@@ -408,6 +412,10 @@ async function handleMessage(request) {
           sendOnEnter: request.sendOnEnter !== false,
           pollingEnabled: request.pollingEnabled !== false,
           notificationsEnabled: request.notificationsEnabled !== false,
+          toastEnabled: request.toastEnabled !== false,
+          flashEnabled: request.flashEnabled !== false,
+          soundEnabled: request.soundEnabled === true,
+          theme: ["classic", "night", "contrast", "hyssopopotamus"].includes(request.theme) ? request.theme : "classic",
         },
       });
       await syncMessages({ notify: false });
@@ -425,7 +433,7 @@ async function handleMessage(request) {
       await updateBadge({});
       return { ok: true };
     default:
-      throw new Error("Unknown extension request.");
+      throw new Error("Unknown app request.");
   }
 }
 

@@ -1,79 +1,70 @@
-# Voice-ish for VoIP.ms — permissive build
+# Voice-ish
 
-A compact Manifest V3 Chrome extension for sending and receiving VoIP.ms SMS and MMS messages from the toolbar. Its visual target is the practical early-2010s Google Voice popup rather than a CRM.
+Voice-ish is a permissively licensed SMS/MMS client for a managed VoIP.ms reseller service. End users sign in with an ordinary Voice-ish email and password. They never enter, receive, or store the reseller's VoIP.ms master API credentials.
 
-## What works
+## Repository layout
 
-- Direct VoIP.ms REST/JSON login using the account email and API-specific password.
-- Displays the public IP VoIP.ms sees so it can be added to the API allow-list.
-- Retrieves account DIDs and lets the user choose which messaging numbers appear.
-- Sends SMS up to 160 characters and MMS for longer text or attachments.
-- Configurable keyboard behavior: Enter sends with Shift+Enter for a newline, or Enter makes a newline with Ctrl/⌘+Enter to send.
-- Attaches up to three already-compatible JPG, GIF, JPEG, PNG, MP3, WAV, MIDI, MP4, or 3GP files.
-- Enforces a conservative maximum of 1,200,000 bytes per attachment.
-- Polls SMS and MMS history, caching up to 2,000 messages locally.
-- Offers 7, 30, 90, 365-day and all-available history windows.
-- Polls every minute in the background and every 15 seconds while open.
-- Shows desktop notifications and an unread badge.
-- Keys every conversation by **your DID + the other number**. A reply remains pinned to the DID that received the conversation.
+- `/` — Manifest V3 Chrome extension.
+- `/apps/standalone` — installable standalone/PWA client with VoxVolley.
+- `/services/reseller-gateway` — PostgreSQL-backed account service and reseller-scoped VoIP.ms gateway.
+- `/docs/ARCHITECTURE.md` — trust boundaries, data ownership, billing seam, and API contract.
 
-## Video limitation
+## Security boundary
 
-This build intentionally contains no FFmpeg, WebAssembly transcoder, codec library, remote conversion service, or other copyleft dependency.
+```text
+Voice-ish user → Voice-ish session → reseller gateway → VoIP.ms
+                                      ↑
+                         master API credentials stay here
+```
 
-Video must already be:
+The gateway resolves the session to one local account and one VoIP.ms reseller-client ID. It rejects arbitrary VoIP.ms methods, rejects caller-supplied client IDs or upstream credentials, injects the mapped reseller-client ID, and validates the sending DID against that account.
 
-1. An `.mp4` or `.3gp` file.
-2. No larger than 1,200,000 bytes.
-3. Encoded with codecs accepted by the destination carrier. The extension can validate the container name and byte size, but not codec compatibility.
+New registration deliberately creates a local account in `pending` state. It does not create or fund a VoIP.ms client until package, payment, address/E911, and rollback policy have been decided.
 
-If a clip does not meet those conditions, compress or trim it in a separate application before attaching it. The extension rejects oversized or unsupported video instead of pretending it will probably work.
+## Gateway setup
 
-## Why the bearer token is not used
+1. Create a PostgreSQL database.
+2. Apply `services/reseller-gateway/db/migrations/001_initial.sql`.
+3. Copy `services/reseller-gateway/.env.example` into your secret-management system and set the values.
+4. Add the PWA origin and any packaged extension origin to `VOICEISH_ALLOWED_ORIGINS`.
+5. Start the service:
 
-VoIP.ms documents the portal's bearer token for 3CX and similar PBX messaging integrations. The public REST/JSON endpoint used for DID discovery, message history, SMS, and MMS still requires `api_username`, `api_password`, and an allow-listed source IP. This extension therefore uses the documented REST credentials and does not store an unused bearer token.
+```bash
+cd services/reseller-gateway
+npm install
+npm start
+```
 
-## Install unpacked
+After a user registers, provision their already-created local account with an administrator-only call:
 
-1. In VoIP.ms, open **Main Menu → SOAP & REST/JSON API**.
-2. Enable API access and create an API-specific password.
-3. Open `chrome://extensions` and enable **Developer mode**.
-4. Click **Load unpacked** and select this folder.
-5. Open Voice-ish and add its displayed public IP to the VoIP.ms allow-list.
-6. Enter the account email and API password.
+```bash
+curl -X PUT "https://voice.example/v1/admin/tenants/TENANT_ID/voipms" \
+  -H "Authorization: Bearer $VOICEISH_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"reseller_client_id":"CLIENT_ID","dids":["6135550100"],"subaccounts":[{"account":"100001","label":"Main phone"}]}'
+```
 
-## Security limitation
+## Chrome extension
 
-This deliberately quick local build stores the API email, API password, message cache, and attachments in `chrome.storage.local`. It is not an encrypted secret vault. Use a dedicated API password and install it only in a trusted Chrome profile and operating-system account.
+Open `chrome://extensions`, enable Developer mode, choose **Load unpacked**, and select the repository root. On first sign-in Chrome requests access only to the Voice-ish service origin entered by the user.
 
-Requests go directly from the extension to `https://voip.ms/api/v1/rest.php`; there is no intermediary server.
+## Standalone/PWA
 
-## 0.2.1 send-path repair
+```bash
+cd apps/standalone
+npm start
+```
 
-- New-message routes now survive the popup's 15-second history refresh.
-- The composer no longer silently exits when its transient conversation row is refreshed away.
-- Send progress and API errors remain visible in the composer instead of appearing only as a short toast.
-- Canadian/US `+1` numbers are normalized to the 10-digit format required by the VoIP.ms messaging API.
-- Both API calls and popup requests have finite timeouts.
+Open `http://127.0.0.1:8787`. This server serves static app files only; it no longer relays caller-supplied VoIP.ms credentials.
 
-## Deliberately absent
+## Checks
 
-- Built-in video or audio conversion.
-- Contacts/address-book integration.
-- Hosted webhook or push relay; incoming messages appear by polling.
-- Encrypted local message storage.
-- Group MMS threading.
+```bash
+npm test
+```
+
+The focused gateway suite proves the scope failures that matter most: a caller cannot replace the reseller-client ID, cannot supply master credentials, cannot invoke arbitrary upstream methods, and cannot send from another client's DID.
 
 ## License
 
-MIT. This package has no runtime dependencies and contains no GPL or LGPL component.
-
-## Development checks
-
-```bash
-node --check background.js
-node --check popup.js
-python3 -m json.tool manifest.json >/dev/null
-```
-
-Live send/receive testing requires a VoIP.ms account, an SMS-enabled DID, API access, and the test machine's public IP on the account's API allow-list.
+MIT. No FFmpeg, GPL, or LGPL component is included.

@@ -1,0 +1,11 @@
+{
+  "name": "voiceish",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check background.js && node --check popup.js && node --check apps/standalone/background.js && node --check apps/standalone/popup.js && node --check apps/standalone/server.mjs && node --check apps/standalone/web-chrome-shim.js && node --check services/reseller-gateway/src/server.mjs && node --check services/reseller-gateway/src/scope.mjs",
+    "test": "npm run check && node --test services/reseller-gateway/test/*.test.mjs"
+  },
+  "license": "MIT"
+}

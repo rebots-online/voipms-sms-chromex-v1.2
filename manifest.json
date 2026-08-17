@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Voice-ish for VoIP.ms",
   "description": "A deliberately small, permissively licensed SMS/MMS messenger for VoIP.ms.",
-  "version": "0.2.1",
+  "version": "0.4.0",
   "minimum_chrome_version": "120",
   "permissions": [
     "alarms",
@@ -10,9 +10,10 @@
     "storage",
     "unlimitedStorage"
   ],
-  "host_permissions": [
-    "https://voip.ms/*",
-    "https://*.voip.ms/*"
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
   ],
   "background": {
     "service_worker": "background.js"

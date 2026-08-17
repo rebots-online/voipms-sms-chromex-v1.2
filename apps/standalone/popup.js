@@ -2,15 +2,19 @@
 // documentation describes a 1.2 MB per-file ceiling. 1,200,000 bytes stays
 // beneath both interpretations and leaves a little transport headroom.
 const MAX_ATTACHMENT_BYTES = 1_200_000;
+const VOXVOLLEY_MAX_SECONDS = 20;
+const VOXVOLLEY_SAMPLE_RATE = 16_000;
 
 const $ = (id) => document.getElementById(id);
 const ui = Object.fromEntries([
   "loadingView", "setupView", "messengerView", "publicIp", "retryIpButton", "connectForm", "serviceUrlInput", "usernameInput",
-  "passwordInput", "connectButton", "createAccountButton", "setupError", "syncButton", "settingsButton", "newMessageButton", "threadList",
+  "passwordInput", "connectButton", "createAccountButton", "setupError", "notificationBell", "bellBadge", "syncButton", "settingsButton", "newMessageButton", "threadList",
   "syncStatus", "emptyConversation", "conversationView", "contactHeading", "didHeading", "messageList", "composerForm",
-  "attachmentTray", "attachmentInput", "messageInput", "sendButton", "messageMode", "sendKeyHint", "characterCount", "composerStatus", "newMessageModal",
+  "attachmentTray", "attachmentInput", "voiceRecordingStatus", "voiceRecordingTime", "voiceRecordingProgress", "voiceRecordButton", "cancelVoiceButton",
+  "messageInput", "sendButton", "messageMode", "sendKeyHint", "characterCount", "composerStatus", "newMessageModal",
   "newMessageForm", "newDidSelect", "newContactInput", "settingsModal", "settingsForm", "accountLabel", "didChecklist",
-  "defaultDidSelect", "historyRangeSelect", "enterBehaviorSelect", "pollingCheckbox", "notificationsCheckbox", "disconnectButton", "settingsError", "toast"
+  "defaultDidSelect", "historyRangeSelect", "enterBehaviorSelect", "themeSelect", "pollingCheckbox", "notificationsCheckbox",
+  "toastCheckbox", "flashCheckbox", "soundCheckbox", "disconnectButton", "settingsError", "toast"
 ].map((id) => [id, $(id)]));
 
 let state = null;
@@ -19,6 +23,9 @@ let activeRoute = null;
 let draftAttachments = [];
 let popupPoll = null;
 let sending = false;
+let voiceRecorder = null;
+let voiceTimer = null;
+let speakingButton = null;
 
 function sendRuntime(message) {
   return new Promise((resolve, reject) => {
@@ -26,7 +33,7 @@ function sendRuntime(message) {
     chrome.runtime.sendMessage(message, (response) => {
       clearTimeout(timeout);
       if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
-      if (!response?.ok) return reject(new Error(response?.error || "Extension request failed."));
+      if (!response?.ok) return reject(new Error(response?.error || "Application request failed."));
       resolve(response.data);
     });
   });
@@ -75,10 +82,91 @@ function toast(message) {
   toastTimer = setTimeout(() => ui.toast.classList.add("hidden"), 3200);
 }
 
+function applyTheme(theme = "classic") {
+  const allowed = ["classic", "night", "contrast", "hyssopopotamus"];
+  document.documentElement.dataset.theme = allowed.includes(theme) ? theme : "classic";
+}
+
+function unreadTotal() {
+  return Object.values(state?.unreadByThread || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+}
+
+function renderBell() {
+  const total = unreadTotal();
+  ui.bellBadge.textContent = total > 99 ? "99+" : String(total);
+  ui.bellBadge.classList.toggle("hidden", !total);
+  ui.notificationBell.classList.toggle("has-unread", Boolean(total));
+  ui.notificationBell.setAttribute("aria-label", total ? `${total} unread message${total === 1 ? "" : "s"}` : "No unread messages");
+}
+
+function playNotificationChime() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    const context = new AudioContextClass();
+    const gain = context.createGain();
+    gain.gain.setValueAtTime(0.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.22);
+    const oscillator = context.createOscillator();
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(660, context.currentTime);
+    oscillator.frequency.setValueAtTime(880, context.currentTime + 0.1);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + 0.23);
+    oscillator.addEventListener("ended", () => context.close().catch(() => {}), { once: true });
+  } catch {}
+}
+
+function announceNewMessages(messages) {
+  if (!messages.length) return;
+  const newest = messages.at(-1);
+  if (state.config.toastEnabled !== false) {
+    const extra = messages.length > 1 ? ` (+${messages.length - 1} more)` : "";
+    toast(`New from ${formatPhone(newest.contact)}: ${newest.text || "MMS attachment"}${extra}`);
+  }
+  if (state.config.flashEnabled !== false) {
+    ui.notificationBell.classList.remove("arrival-flash");
+    requestAnimationFrame(() => ui.notificationBell.classList.add("arrival-flash"));
+    setTimeout(() => ui.notificationBell.classList.remove("arrival-flash"), 2400);
+  }
+  if (state.config.soundEnabled === true) playNotificationChime();
+}
+
 function showComposerStatus(message = "", { error = false } = {}) {
   ui.composerStatus.textContent = message;
   ui.composerStatus.classList.toggle("hidden", !message);
   ui.composerStatus.classList.toggle("error", Boolean(message) && error);
+}
+
+function stopSpeaking() {
+  window.speechSynthesis?.cancel();
+  speakingButton?.classList.remove("speaking");
+  speakingButton = null;
+}
+
+function speakText(text, button) {
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    showComposerStatus("This browser does not expose a system text-to-speech voice.", { error: true });
+    return;
+  }
+  const wasSpeaking = speakingButton === button;
+  stopSpeaking();
+  if (wasSpeaking) return;
+  const utterance = new SpeechSynthesisUtterance(String(text || ""));
+  utterance.onstart = () => {
+    speakingButton = button;
+    button.classList.add("speaking");
+  };
+  const finish = () => {
+    button.classList.remove("speaking");
+    if (speakingButton === button) speakingButton = null;
+  };
+  utterance.onend = finish;
+  utterance.onerror = finish;
+  window.speechSynthesis.speak(utterance);
 }
 
 function makeDraftMessage(did, contact) {
@@ -196,12 +284,15 @@ function appendMedia(container, urls) {
     if (!url) continue;
     const lower = url.toLowerCase();
     let element;
+    let isAudio = false;
     if (/^data:image\//.test(lower) || /\.(png|jpe?g|gif|webp)(\?|$)/.test(lower)) {
       element = document.createElement("img");
       element.alt = "MMS image";
     } else if (/^data:audio\//.test(lower) || /\.(mp3|wav|m4a|ogg)(\?|$)/.test(lower)) {
       element = document.createElement("audio");
       element.controls = true;
+      element.preload = "metadata";
+      isAudio = true;
     } else if (/^data:video\//.test(lower) || /\.(mp4|3gp|webm)(\?|$)/.test(lower)) {
       element = document.createElement("video");
       element.controls = true;
@@ -217,6 +308,12 @@ function appendMedia(container, urls) {
     element.src = url;
     element.referrerPolicy = "no-referrer";
     wrapper.append(element);
+    if (isAudio) {
+      const note = document.createElement("small");
+      note.className = "transcript-roadmap-note";
+      note.textContent = "Transcription: on the VoxVolley roadmap";
+      wrapper.append(note);
+    }
   }
   if (wrapper.childElementCount) container.append(wrapper);
 }
@@ -240,7 +337,16 @@ function renderMessages(conversation) {
     const bubble = document.createElement("div");
     bubble.className = "message-bubble";
     appendMedia(bubble, message.media);
-    if (message.text) bubble.append(document.createTextNode(message.text));
+    if (message.text) {
+      const speak = document.createElement("button");
+      speak.type = "button";
+      speak.className = "speak-message-button";
+      speak.title = "Read this message aloud with the system voice";
+      speak.setAttribute("aria-label", "Read message aloud");
+      speak.textContent = "🔊";
+      speak.addEventListener("click", () => speakText(message.text, speak));
+      bubble.append(speak, document.createTextNode(message.text));
+    }
     const time = document.createElement("span");
     time.className = "message-time";
     const status = message.direction === "out" && message.carrierStatus ? ` · ${message.carrierStatus}` : "";
@@ -267,6 +373,7 @@ async function openThread(key) {
   renderThreads();
   renderMessages(conversation);
   state.unreadByThread[key] = 0;
+  renderBell();
   sendRuntime({ type: "MARK_READ", thread: key }).catch(() => {});
   updateComposerMode();
   ui.messageInput.focus();
@@ -284,9 +391,11 @@ function renderStatus() {
 }
 
 function renderMessenger() {
+  applyTheme(state?.config?.theme);
   showOnly(ui.messengerView);
   ensureActiveConversation();
   renderThreads();
+  renderBell();
   renderStatus();
   populateDidSelects();
   if (activeThread && conversations().some((item) => item.thread === activeThread)) {
@@ -339,6 +448,10 @@ function renderSettings() {
   ui.enterBehaviorSelect.value = state.config.sendOnEnter === false ? "newline" : "send";
   ui.pollingCheckbox.checked = state.config.pollingEnabled;
   ui.notificationsCheckbox.checked = state.config.notificationsEnabled;
+  ui.toastCheckbox.checked = state.config.toastEnabled !== false;
+  ui.flashCheckbox.checked = state.config.flashEnabled !== false;
+  ui.soundCheckbox.checked = state.config.soundEnabled === true;
+  ui.themeSelect.value = state.config.theme || "classic";
   rebuildDefaultDidOptions();
   ui.defaultDidSelect.value = state.config.defaultDid;
   showError(ui.settingsError);
@@ -371,7 +484,7 @@ function renderAttachments() {
   ui.attachmentTray.replaceChildren();
   for (const [index, file] of draftAttachments.entries()) {
     const item = document.createElement("div");
-    item.className = "attachment-item";
+    item.className = `attachment-item${file.voiceClip ? " voice-clip" : ""}`;
     const name = document.createElement("span");
     name.textContent = file.name;
     const remove = document.createElement("button");
@@ -383,6 +496,13 @@ function renderAttachments() {
       updateComposerMode();
     });
     item.append(name, remove);
+    if (file.voiceClip && file.dataUrl) {
+      const preview = document.createElement("audio");
+      preview.controls = true;
+      preview.preload = "metadata";
+      preview.src = file.dataUrl;
+      item.append(preview);
+    }
     ui.attachmentTray.append(item);
   }
   ui.attachmentTray.classList.toggle("hidden", !draftAttachments.length);
@@ -395,6 +515,165 @@ function fileToDataUrl(file) {
     reader.onerror = () => reject(reader.error || new Error("Could not read attachment."));
     reader.readAsDataURL(file);
   });
+}
+
+function mergeFloat32(chunks) {
+  const length = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+  const merged = new Float32Array(length);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return merged;
+}
+
+function downsamplePcm(input, inputRate, outputRate) {
+  if (inputRate === outputRate) return input;
+  if (outputRate > inputRate) throw new Error("The microphone sample rate is unexpectedly below 16 kHz.");
+  const ratio = inputRate / outputRate;
+  const output = new Float32Array(Math.floor(input.length / ratio));
+  for (let index = 0; index < output.length; index += 1) {
+    const start = Math.floor(index * ratio);
+    const end = Math.max(start + 1, Math.floor((index + 1) * ratio));
+    let total = 0;
+    for (let source = start; source < end && source < input.length; source += 1) total += input[source];
+    output[index] = total / Math.max(1, end - start);
+  }
+  return output;
+}
+
+function encodePcmWav(samples, sampleRate) {
+  const buffer = new ArrayBuffer(44 + samples.length * 2);
+  const view = new DataView(buffer);
+  const writeAscii = (offset, value) => {
+    for (let index = 0; index < value.length; index += 1) view.setUint8(offset + index, value.charCodeAt(index));
+  };
+  writeAscii(0, "RIFF");
+  view.setUint32(4, 36 + samples.length * 2, true);
+  writeAscii(8, "WAVE");
+  writeAscii(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeAscii(36, "data");
+  view.setUint32(40, samples.length * 2, true);
+  for (let index = 0; index < samples.length; index += 1) {
+    const sample = Math.max(-1, Math.min(1, samples[index]));
+    view.setInt16(44 + index * 2, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+  }
+  return new Blob([buffer], { type: "audio/wav" });
+}
+
+function voiceDurationLabel(seconds) {
+  const whole = Math.max(0, Math.min(VOXVOLLEY_MAX_SECONDS, Math.floor(seconds)));
+  return `0:${String(whole).padStart(2, "0")} / 0:${VOXVOLLEY_MAX_SECONDS}`;
+}
+
+function updateRecordingUi(active, seconds = 0) {
+  ui.voiceRecordingStatus.classList.toggle("hidden", !active);
+  ui.voiceRecordButton.classList.toggle("recording", active);
+  ui.voiceRecordButton.setAttribute("aria-pressed", String(active));
+  ui.voiceRecordButton.setAttribute("aria-label", active ? "Stop and attach voice message" : "Record a short voice message");
+  ui.voiceRecordingTime.textContent = voiceDurationLabel(seconds);
+  ui.voiceRecordingProgress.value = Math.max(0, Math.min(VOXVOLLEY_MAX_SECONDS, seconds));
+}
+
+function releaseVoiceCapture(capture) {
+  try { capture.source?.disconnect(); } catch {}
+  try { capture.node?.disconnect(); } catch {}
+  try { capture.mute?.disconnect(); } catch {}
+  for (const track of capture.stream?.getTracks?.() || []) track.stop();
+  capture.context?.close?.().catch?.(() => {});
+}
+
+async function stopVoiceRecording({ attach = true } = {}) {
+  const capture = voiceRecorder;
+  if (!capture) return false;
+  voiceRecorder = null;
+  clearInterval(voiceTimer);
+  voiceTimer = null;
+  const elapsedMs = Math.min(VOXVOLLEY_MAX_SECONDS * 1000, performance.now() - capture.startedAt);
+  releaseVoiceCapture(capture);
+  updateRecordingUi(false);
+  if (!attach) {
+    showComposerStatus("Voice clip discarded.");
+    return false;
+  }
+  const sourcePcm = mergeFloat32(capture.chunks);
+  if (!sourcePcm.length || elapsedMs < 250) {
+    showComposerStatus("The voice clip was too short to attach.", { error: true });
+    return false;
+  }
+  const pcm = downsamplePcm(sourcePcm, capture.sampleRate, VOXVOLLEY_SAMPLE_RATE);
+  const blob = encodePcmWav(pcm, VOXVOLLEY_SAMPLE_RATE);
+  if (blob.size > MAX_ATTACHMENT_BYTES) {
+    showComposerStatus("The recorded clip exceeded the VoIP.ms attachment ceiling. Record a shorter clip.", { error: true });
+    return false;
+  }
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-");
+  draftAttachments.push({
+    name: `VoxVolley-${stamp}.wav`,
+    type: "audio/wav",
+    size: blob.size,
+    dataUrl: await fileToDataUrl(blob),
+    voiceClip: true,
+    durationMs: elapsedMs,
+  });
+  renderAttachments();
+  updateComposerMode();
+  showComposerStatus(`VoxVolley attached · ${(elapsedMs / 1000).toFixed(1)} seconds · ${Math.ceil(blob.size / 1024)} KB`);
+  return true;
+}
+
+async function startVoiceRecording() {
+  if (voiceRecorder) return stopVoiceRecording({ attach: true });
+  if (draftAttachments.length >= 3) {
+    showComposerStatus("Remove an attachment before recording; VoIP.ms allows up to three.", { error: true });
+    return false;
+  }
+  if (!navigator.mediaDevices?.getUserMedia || !("AudioWorkletNode" in window)) {
+    showComposerStatus("This browser cannot capture a VoxVolley clip.", { error: true });
+    return false;
+  }
+  let capture = { stream: null, context: null, source: null, node: null, mute: null };
+  try {
+    capture.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    capture.context = new AudioContext({ latencyHint: "interactive" });
+    await capture.context.audioWorklet.addModule(chrome.runtime.getURL("audio-recorder-worklet.js"));
+    await capture.context.resume();
+    capture.source = capture.context.createMediaStreamSource(capture.stream);
+    capture.node = new AudioWorkletNode(capture.context, "voxvolley-pcm-capture");
+    capture.mute = capture.context.createGain();
+    capture.mute.gain.value = 0;
+    const chunks = [];
+    capture.node.port.onmessage = (event) => chunks.push(new Float32Array(event.data));
+    capture.source.connect(capture.node);
+    capture.node.connect(capture.mute);
+    capture.mute.connect(capture.context.destination);
+    Object.assign(capture, { chunks, sampleRate: capture.context.sampleRate, startedAt: performance.now() });
+    voiceRecorder = capture;
+    updateRecordingUi(true);
+    showComposerStatus("Recording VoxVolley… tap the red microphone to stop and attach.");
+    voiceTimer = setInterval(() => {
+      if (!voiceRecorder) return;
+      const elapsed = (performance.now() - voiceRecorder.startedAt) / 1000;
+      updateRecordingUi(true, elapsed);
+      if (elapsed >= VOXVOLLEY_MAX_SECONDS) void stopVoiceRecording({ attach: true });
+    }, 200);
+    return true;
+  } catch (error) {
+    if (capture) releaseVoiceCapture(capture);
+    const denied = error?.name === "NotAllowedError";
+    showComposerStatus(denied ? "Microphone permission was not granted." : `Could not start VoxVolley: ${error.message || error}`, { error: true });
+    return false;
+  }
 }
 
 function fileExtension(file) {
@@ -437,7 +716,9 @@ async function refresh({ quiet = false } = {}) {
   if (!quiet) ui.syncButton.classList.add("syncing");
   try {
     const localDrafts = (state?.messages || []).filter((message) => message.draftOnly);
+    const priorKeys = new Set((state?.messages || []).map((message) => message.key));
     const nextState = await sendRuntime({ type: "SYNC" });
+    const newIncoming = nextState.messages.filter((message) => message.direction === "in" && !priorKeys.has(message.key));
     for (const draft of localDrafts) {
       const thread = draft.thread || makeThreadKey(draft.did, draft.contact);
       if (!nextState.messages.some((message) => (message.thread || makeThreadKey(message.did, message.contact)) === thread)) {
@@ -446,6 +727,7 @@ async function refresh({ quiet = false } = {}) {
     }
     state = nextState;
     renderMessenger();
+    announceNewMessages(newIncoming);
   } catch (error) {
     if (!quiet) toast(error.message);
   } finally {
@@ -506,6 +788,13 @@ ui.retryIpButton.addEventListener("click", async () => {
   }
 });
 ui.syncButton.addEventListener("click", () => refresh());
+ui.notificationBell.addEventListener("click", () => {
+  const unread = conversations()
+    .filter((item) => Number(state.unreadByThread?.[item.thread] || 0) > 0)
+    .sort((a, b) => String(b.messages.at(-1)?.date || "").localeCompare(String(a.messages.at(-1)?.date || "")));
+  if (unread.length) void openThread(unread[0].thread);
+  else toast("No unread messages.");
+});
 ui.settingsButton.addEventListener("click", () => { renderSettings(); ui.settingsModal.classList.remove("hidden"); });
 ui.newMessageButton.addEventListener("click", () => {
   populateDidSelects();
@@ -545,8 +834,13 @@ ui.settingsForm.addEventListener("submit", async (event) => {
       sendOnEnter: ui.enterBehaviorSelect.value !== "newline",
       pollingEnabled: ui.pollingCheckbox.checked,
       notificationsEnabled: ui.notificationsCheckbox.checked,
+      toastEnabled: ui.toastCheckbox.checked,
+      flashEnabled: ui.flashCheckbox.checked,
+      soundEnabled: ui.soundCheckbox.checked,
+      theme: ui.themeSelect.value,
     });
     ui.settingsModal.classList.add("hidden");
+    applyTheme(state.config.theme);
     if (!state.messages.some((message) => message.thread === activeThread) && !activeRoute) activeThread = "";
     renderMessenger();
     toast("Settings saved.");
@@ -579,10 +873,13 @@ ui.messageInput.addEventListener("keydown", (event) => {
   }
 });
 ui.attachmentInput.addEventListener("change", () => addAttachments(ui.attachmentInput.files).catch((error) => toast(error.message)));
+ui.voiceRecordButton.addEventListener("click", () => void startVoiceRecording());
+ui.cancelVoiceButton.addEventListener("click", () => void stopVoiceRecording({ attach: false }));
 
 async function submitActiveMessage() {
   if (sending) return;
   showComposerStatus();
+  if (voiceRecorder) await stopVoiceRecording({ attach: true });
   ensureActiveConversation();
   const conversation = conversations().find((item) => item.thread === activeThread);
   const route = activeRoute || (conversation ? { did: conversation.did, contact: conversation.contact } : null);
@@ -649,5 +946,14 @@ async function init() {
   }
 }
 
-window.addEventListener("unload", () => { if (popupPoll) clearInterval(popupPoll); });
+window.addEventListener("unload", () => {
+  if (popupPoll) clearInterval(popupPoll);
+  stopSpeaking();
+  if (voiceRecorder) {
+    const capture = voiceRecorder;
+    voiceRecorder = null;
+    clearInterval(voiceTimer);
+    releaseVoiceCapture(capture);
+  }
+});
 init();
