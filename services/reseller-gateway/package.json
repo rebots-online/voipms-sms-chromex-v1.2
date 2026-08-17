@@ -1,14 +1,15 @@
 {
   "name": "@voiceish/reseller-gateway",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "start": "node src/server.mjs",
-    "check": "node --check src/server.mjs && node --check src/scope.mjs && node --check src/voipms.mjs",
+    "start": "node src/launch.mjs",
+    "setup": "node src/launch.mjs --setup",
+    "check": "node --check src/server.mjs && node --check src/scope.mjs && node --check src/voipms.mjs && node --check src/config.mjs && node --check src/installer.mjs && node --check src/launch.mjs && node --check setup/app.js && node --check admin/app.js",
     "test": "node --test"
   },
   "dependencies": {

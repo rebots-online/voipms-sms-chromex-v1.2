@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Initialize Voice-ish</title>
+  <link rel="stylesheet" href="/setup/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="brand-mark" aria-hidden="true">V<span>•</span></div>
+      <div>
+        <p class="eyebrow">Voice-ish service initializer</p>
+        <h1>Make the plumbing disappear.</h1>
+        <p class="lede">Connect the service once. The initializer validates each dependency, applies the database schema, creates the operator, and starts Voice-ish.</p>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <nav aria-label="Setup progress">
+        <ol class="steps">
+          <li class="active" data-step-indicator="0"><span>1</span><div>Service<small>Where it lives</small></div></li>
+          <li data-step-indicator="1"><span>2</span><div>Database<small>Test and migrate</small></div></li>
+          <li data-step-indicator="2"><span>3</span><div>VoIP.ms<small>Private upstream</small></div></li>
+          <li data-step-indicator="3"><span>4</span><div>Operator<small>First account</small></div></li>
+          <li data-step-indicator="4"><span>5</span><div>Initialize<small>Review and launch</small></div></li>
+        </ol>
+      </nav>
+
+      <form id="setup-form" novalidate>
+        <section class="panel active" data-step="0">
+          <div class="panel-heading"><p>Step one</p><h2>Service address</h2><span>This is the address used by the extension and standalone app.</span></div>
+          <div class="field-grid">
+            <label class="field wide">Public service address
+              <input name="publicUrl" type="url" value="http://127.0.0.1:8790" required>
+              <small>Use HTTPS for a remote or public deployment.</small>
+            </label>
+            <label class="field">Local listen port
+              <input name="listenPort" type="number" value="8790" min="1" max="65535" required>
+            </label>
+            <label class="switch-field"><input name="bindRemotely" type="checkbox"><span>Accept remote connections</span><small>Enable only behind a firewall or HTTPS reverse proxy.</small></label>
+            <label class="field wide">Allowed application origins
+              <textarea name="allowedOrigins" rows="4">http://127.0.0.1:8787</textarea>
+              <small>One origin per line. Add the hosted PWA and packaged extension origins later as needed.</small>
+            </label>
+          </div>
+        </section>
+
+        <section class="panel" data-step="1" hidden>
+          <div class="panel-heading"><p>Step two</p><h2>PostgreSQL</h2><span>The initializer tests the connection and applies every unapplied migration.</span></div>
+          <label class="field">Database connection
+            <input name="databaseUrl" type="url" value="postgres://voiceish:change-me@127.0.0.1:5432/voiceish" required autocomplete="off" spellcheck="false">
+            <small>Credentials are written only to the owner-readable Voice-ish configuration file.</small>
+          </label>
+          <div class="test-row"><button class="secondary" type="button" data-action="test-database">Test database</button><output id="database-result" class="result" aria-live="polite">Not tested yet</output></div>
+        </section>
+
+        <section class="panel" data-step="2" hidden>
+          <div class="panel-heading"><p>Step three</p><h2>VoIP.ms reseller authority</h2><span>These master credentials remain on this service and are never returned to clients.</span></div>
+          <div class="field-grid">
+            <label class="field wide">API username
+              <input name="voipMsUsername" autocomplete="username" required>
+            </label>
+            <label class="field">API password
+              <input name="voipMsPassword" type="password" autocomplete="new-password" required>
+            </label>
+            <label class="field">API address
+              <input name="voipMsApiUrl" type="url" value="https://voip.ms/api/v1/rest.php" required>
+            </label>
+          </div>
+          <div class="test-row"><button class="secondary" type="button" data-action="test-voipms">Verify VoIP.ms access</button><output id="voipms-result" class="result" aria-live="polite">Not tested yet</output></div>
+        </section>
+
+        <section class="panel" data-step="3" hidden>
+          <div class="panel-heading"><p>Step four</p><h2>First operator</h2><span>Create the local owner account. Optionally map its existing VoIP.ms reseller client now.</span></div>
+          <div class="field-grid">
+            <label class="field">Display name
+              <input name="operatorName" value="Voice-ish operator" required autocomplete="name">
+            </label>
+            <label class="field">Email
+              <input name="operatorEmail" type="email" required autocomplete="email">
+            </label>
+            <label class="field wide">Password
+              <input name="operatorPassword" type="password" minlength="12" required autocomplete="new-password">
+              <small>At least 12 characters. The initializer hashes it before database storage.</small>
+            </label>
+          </div>
+          <details>
+            <summary>Map the first phone-service account now <span>optional</span></summary>
+            <div class="field-grid details-grid">
+              <label class="field wide">VoIP.ms reseller-client ID
+                <input name="resellerClientId">
+              </label>
+              <label class="field">Phone numbers
+                <textarea name="dids" rows="4" placeholder="6135550100&#10;6135550101"></textarea>
+              </label>
+              <label class="field">SIP phones / subaccounts
+                <textarea name="subaccounts" rows="4" placeholder="100001&#10;100002"></textarea>
+              </label>
+            </div>
+          </details>
+        </section>
+
+        <section class="panel" data-step="4" hidden>
+          <div class="panel-heading"><p>Final step</p><h2>Review and initialize</h2><span>No API secret or password is repeated on this screen.</span></div>
+          <dl class="review" id="review"></dl>
+          <div class="boundary"><strong>Security boundary</strong><span>Voice-ish user → scoped gateway → VoIP.ms. The initializer generates the internal administrator token automatically.</span></div>
+          <label class="confirmation"><input name="confirmed" type="checkbox" required><span>Apply migrations, create the operator, save the protected configuration, and launch the service.</span></label>
+          <div id="complete-result" class="completion" aria-live="polite"></div>
+        </section>
+
+        <footer class="actions">
+          <button class="ghost" type="button" data-action="back" disabled>Back</button>
+          <button class="primary" type="button" data-action="next">Continue</button>
+          <button class="primary" type="submit" data-action="complete" hidden>Initialize Voice-ish</button>
+        </footer>
+      </form>
+    </div>
+    <p class="footnote">Setup is available only on this machine and locks after successful initialization.</p>
+  </main>
+  <script src="/setup/app.js" defer></script>
+</body>
+</html>

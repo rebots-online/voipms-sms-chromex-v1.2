@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voice-ish service operator</title>
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/admin/"><span>V•</span> Voice-ish</a>
+    <div><strong>Service operator</strong><button id="sign-out" type="button" hidden>Sign out</button></div>
+  </header>
+  <main>
+    <section id="login-panel" class="login card">
+      <p class="eyebrow">Protected console</p>
+      <h1>Provision customers without speaking fluent softswitch.</h1>
+      <p>Sign in with the platform-operator account created by the initializer.</p>
+      <form id="login-form">
+        <label>Email<input name="email" type="email" required autocomplete="email"></label>
+        <label>Password<input name="password" type="password" required autocomplete="current-password"></label>
+        <button type="submit">Sign in</button>
+        <output id="login-result" aria-live="polite"></output>
+      </form>
+    </section>
+
+    <section id="operator-panel" hidden>
+      <div class="heading">
+        <div><p class="eyebrow">Customer phone service</p><h1>Accounts</h1></div>
+        <button id="refresh" class="secondary" type="button">Refresh</button>
+      </div>
+      <div class="operator-grid">
+        <div class="card list-card">
+          <div class="filter-row"><input id="filter" type="search" placeholder="Find an account"><span id="account-count"></span></div>
+          <div id="accounts" class="accounts"></div>
+        </div>
+        <form id="provision-form" class="card provision-card">
+          <p class="eyebrow">Selected account</p>
+          <h2 id="selected-name">Choose an account</h2>
+          <p id="selected-email" class="muted">Pending accounts appear first.</p>
+          <input name="tenantId" type="hidden">
+          <label>VoIP.ms reseller-client ID<input name="resellerClientId" required disabled></label>
+          <label>Phone numbers<textarea name="dids" rows="5" placeholder="One DID per line" disabled></textarea></label>
+          <label>Phones / SIP subaccounts<textarea name="subaccounts" rows="5" placeholder="One subaccount per line" disabled></textarea></label>
+          <button type="submit" disabled>Save phone-service mapping</button>
+          <output id="provision-result" aria-live="polite"></output>
+        </form>
+      </div>
+    </section>
+  </main>
+  <script src="/admin/app.js" defer></script>
+</body>
+</html>
