@@ -87,7 +87,8 @@ export async function authenticate(pool, authorization) {
     throw error;
   }
   const result = await pool.query(
-    `SELECT u.id AS user_id, u.email, u.display_name, m.tenant_id, m.role,
+    `SELECT u.id AS user_id, u.email, u.display_name, u.is_platform_admin,
+            m.tenant_id, m.role,
             t.name AS tenant_name, r.reseller_client_id, r.provisioning_status
        FROM auth_sessions s
        JOIN app_users u ON u.id = s.user_id

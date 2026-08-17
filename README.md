@@ -6,7 +6,7 @@ Voice-ish is a permissively licensed SMS/MMS client for a managed VoIP.ms resell
 
 - `/` — Manifest V3 Chrome extension.
 - `/apps/standalone` — installable standalone/PWA client with VoxVolley.
-- `/services/reseller-gateway` — PostgreSQL-backed account service and reseller-scoped VoIP.ms gateway.
+- `/services/reseller-gateway` — initializer, operator console, account service, and reseller-scoped VoIP.ms gateway.
 - `/docs/ARCHITECTURE.md` — trust boundaries, data ownership, billing seam, and API contract.
 
 ## Security boundary
@@ -21,28 +21,21 @@ The gateway resolves the session to one local account and one VoIP.ms reseller-c
 
 New registration deliberately creates a local account in `pending` state. It does not create or fund a VoIP.ms client until package, payment, address/E911, and rollback policy have been decided.
 
-## Gateway setup
+## Installer/initializer
 
-1. Create a PostgreSQL database.
-2. Apply `services/reseller-gateway/db/migrations/001_initial.sql`.
-3. Copy `services/reseller-gateway/.env.example` into your secret-management system and set the values.
-4. Add the PWA origin and any packaged extension origin to `VOICEISH_ALLOWED_ORIGINS`.
-5. Start the service:
+Run `install-voiceish.cmd` on Windows or double-click/run `install-voiceish.sh` on Linux/macOS. The launcher installs the gateway dependency and opens the local initializer automatically.
 
-```bash
-cd services/reseller-gateway
-npm install
-npm start
-```
+The guarded five-stage GUI:
 
-After a user registers, provision their already-created local account with an administrator-only call:
+1. selects the local/public service address and exact allowed application origins;
+2. tests PostgreSQL and applies every unapplied migration;
+3. verifies the VoIP.ms reseller API credentials without returning them to the browser;
+4. creates the first platform operator and can map its reseller client, numbers, and phones;
+5. generates the internal administrator token, writes an owner-readable configuration, locks setup, and launches the service.
 
-```bash
-curl -X PUT "https://voice.example/v1/admin/tenants/TENANT_ID/voipms" \
-  -H "Authorization: Bearer $VOICEISH_ADMIN_TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"reseller_client_id":"CLIENT_ID","dids":["6135550100"],"subaccounts":[{"account":"100001","label":"Main phone"}]}'
-```
+No SQL command, `.env` editing, token generation, or provisioning `curl` is part of the interactive setup path. Environment variables remain supported for unattended deployments; runtime startup still applies migrations automatically.
+
+After installation, open `{service address}/admin/`. The operator console lists new/pending customer accounts and provides the ongoing GUI for reseller-client, number, and phone mapping. The internal service token is never sent to that console.
 
 ## Chrome extension
 
@@ -63,7 +56,7 @@ Open `http://127.0.0.1:8787`. This server serves static app files only; it no lo
 npm test
 ```
 
-The focused gateway suite proves the scope failures that matter most: a caller cannot replace the reseller-client ID, cannot supply master credentials, cannot invoke arbitrary upstream methods, and cannot send from another client's DID.
+The focused suite proves both initialization and reseller boundaries: a caller cannot drive setup without its one-time local authorization, remote origins require HTTPS, stored secrets are owner-readable, a customer cannot replace the reseller-client ID or master credentials, arbitrary upstream methods are rejected, and a customer cannot send from another account's DID.
 
 ## License
 

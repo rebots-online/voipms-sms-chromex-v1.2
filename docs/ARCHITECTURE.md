@@ -2,12 +2,13 @@
 
 ## Outcome
 
-The Chrome extension and standalone/PWA expose the same customer-facing messenger. A PostgreSQL-backed gateway supplies registration and sessions, maps each account to a VoIP.ms reseller client, and performs every upstream request with one protected reseller credential pair.
+The Chrome extension and standalone/PWA expose the same customer-facing messenger. A first-launch initializer and post-install operator console own deployment setup and account mapping. The PostgreSQL-backed gateway supplies registration and sessions, maps each account to a VoIP.ms reseller client, and performs every upstream request with one protected reseller credential pair.
 
 ```mermaid
 flowchart TD
   U["Voice-ish user"] --> C["Extension or PWA"]
   C --> G["Reseller gateway"]
+  O["Initializer / operator GUI"] --> G
   G --> D["Account and scope database"]
   G --> V["VoIP.ms reseller API"]
   R["RevenueCat now / Woo later"] --> L["Idempotent commerce ledger"]
@@ -19,7 +20,7 @@ flowchart TD
 
 - Extension root: `rebots-online/voipms-sms-chromex-v1.2`, version 0.2.1.
 - Standalone/PWA: `rebots-online/https---forgejo.robin.mba-rcheung-voipmsish-standalone-messenger`, version 0.3.0.
-- Canonical public destination: `RocheMediaServices/voipms-sms-chromex`, version 0.4.0.
+- Canonical public repository: `rebots-online/voipms-sms-chromex` (currently reached through the historical `voipms-sms-chromex-v1.2` name), version 0.5.0.
 
 The canonical repository keeps both working clients and adds the reseller gateway rather than choosing one ancestor and losing the other.
 
@@ -76,7 +77,28 @@ register → user + account + owner membership + session
          → active mapping + allowed DIDs/subaccounts
 ```
 
+The installer creates the first user as a platform operator. After installation, `/admin/` uses an ordinary revocable Voice-ish session plus the platform-admin flag; it never receives the internal administrator token. It lists pending tenants and maps a selected account to its reseller-client ID, DIDs, and subaccounts.
+
 Automatic VoIP.ms signup is intentionally outside this baseline. The schema already includes idempotent `provisioning_jobs` so it can be introduced without changing client authentication.
+
+## Initialization boundary
+
+Before configuration exists, the launcher binds the initializer to `127.0.0.1` only, creates a 256-bit one-time token, and opens the setup URL with that token in the browser fragment. The GUI moves it to session storage and removes the fragment from browser history. Every mutating setup request requires the token.
+
+Successful initialization:
+
+1. validates public URLs and requires HTTPS for non-local service/application origins;
+2. tests the PostgreSQL and VoIP.ms connections;
+3. applies checksum-tracked migrations;
+4. creates and promotes the first operator;
+5. optionally maps the first reseller client transactionally;
+6. creates the service-only administrator token;
+7. atomically writes `.voiceish/config.json` with owner-only permissions;
+8. closes the initializer listener and starts the runtime on the configured interface.
+
+The configuration file is never served. A second initialization attempt is rejected once it exists. Unattended deployments may supply the equivalent environment variables; migrations are still applied on every runtime start.
+
+Every future commerce or gateway adapter—including RevenueCat, WooCommerce, ACP, x402, Android gateways, and GSM hardware—must contribute its configuration and verification stage to this initializer/operator surface. An adapter is not considered integrated if its required setup exists only as environment variables or README commands.
 
 ## Commerce seam
 
@@ -109,7 +131,7 @@ This permits RevenueCat to provide the day-one paywall while the tailored WooCom
 ## Operational requirements
 
 - Terminate TLS before exposing the gateway beyond localhost.
-- Keep the VoIP.ms credential pair and `VOICEISH_ADMIN_TOKEN` in a secret manager.
+- Keep the `.voiceish` state directory owner-readable; unattended deployments should put the VoIP.ms credential pair and `VOICEISH_ADMIN_TOKEN` in a secret manager.
 - Configure VoIP.ms API source-IP allow-listing for the gateway host, not end-user devices.
 - Restrict `VOICEISH_ALLOWED_ORIGINS` to exact deployed clients.
 - Run session cleanup, mapping reconciliation, and commerce/provisioning workers on a schedule.

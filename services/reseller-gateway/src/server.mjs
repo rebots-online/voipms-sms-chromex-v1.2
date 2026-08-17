@@ -1,5 +1,7 @@
 import http from "node:http";
-import { pathToFileURL } from "node:url";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import pg from "pg";
 import { loadConfig } from "./config.mjs";
 import { authenticate, login, register } from "./auth.mjs";
@@ -8,6 +10,7 @@ import { VoipMsApi } from "./voipms.mjs";
 
 const { Pool } = pg;
 const MAX_BODY_BYTES = 8 * 1024 * 1024;
+const ADMIN_ASSET_DIRECTORY = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../admin");
 
 function sendJson(response, statusCode, body, origin, config) {
   const headers = {
@@ -23,6 +26,18 @@ function sendJson(response, statusCode, body, origin, config) {
   }
   response.writeHead(statusCode, headers);
   response.end(JSON.stringify(body));
+}
+
+async function sendAdminAsset(response, filename, contentType) {
+  const content = await readFile(path.join(ADMIN_ASSET_DIRECTORY, filename));
+  response.writeHead(200, {
+    "Content-Type": contentType,
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "Content-Security-Policy": "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'",
+  });
+  response.end(content);
 }
 
 async function readJson(request) {
@@ -80,7 +95,39 @@ async function runScopedCall({ pool, voipMs, identity, method, params }) {
   return filterScopedResponse(method, payload, dids);
 }
 
-async function provisionTenant(pool, tenantId, body) {
+async function requirePlatformAdministrator(pool, authorization, config) {
+  if (authorization === `Bearer ${config.adminToken}`) return { authentication: "service-token" };
+  const identity = await authenticate(pool, authorization);
+  if (!identity.is_platform_admin) {
+    const error = new Error("Platform administrator access is required.");
+    error.statusCode = 403;
+    throw error;
+  }
+  return identity;
+}
+
+async function listTenants(pool) {
+  const result = await pool.query(
+    `SELECT t.id, t.name, t.created_at, r.reseller_client_id,
+            COALESCE(r.provisioning_status, 'pending') AS provisioning_status,
+            (SELECT u.email
+               FROM tenant_memberships m
+               JOIN app_users u ON u.id = m.user_id
+              WHERE m.tenant_id = t.id
+              ORDER BY CASE m.role WHEN 'owner' THEN 0 ELSE 1 END, m.created_at
+              LIMIT 1) AS owner_email,
+            COALESCE((SELECT jsonb_agg(d.did ORDER BY d.did)
+                        FROM voipms_dids d WHERE d.tenant_id = t.id AND d.status = 'active'), '[]'::jsonb) AS dids,
+            COALESCE((SELECT jsonb_agg(s.subaccount ORDER BY s.subaccount)
+                        FROM voipms_subaccounts s WHERE s.tenant_id = t.id AND s.status = 'active'), '[]'::jsonb) AS subaccounts
+       FROM tenants t
+       LEFT JOIN voipms_reseller_clients r ON r.tenant_id = t.id
+      ORDER BY (COALESCE(r.provisioning_status, 'pending') = 'pending') DESC, t.created_at DESC`
+  );
+  return result.rows;
+}
+
+export async function provisionTenant(pool, tenantId, body) {
   const resellerClientId = String(body.reseller_client_id || "").trim();
   if (!resellerClientId) {
     const error = new Error("reseller_client_id is required.");
@@ -155,8 +202,15 @@ export function createServer({ pool, voipMs, config }) {
       }
 
       const url = new URL(request.url, config.publicUrl);
+      if (request.method === "GET" && url.pathname === "/admin") {
+        response.writeHead(302, { Location: "/admin/", "Cache-Control": "no-store" });
+        return response.end();
+      }
+      if (request.method === "GET" && url.pathname === "/admin/") return sendAdminAsset(response, "index.html", "text/html; charset=utf-8");
+      if (request.method === "GET" && url.pathname === "/admin/app.js") return sendAdminAsset(response, "app.js", "text/javascript; charset=utf-8");
+      if (request.method === "GET" && url.pathname === "/admin/style.css") return sendAdminAsset(response, "style.css", "text/css; charset=utf-8");
       if (request.method === "GET" && url.pathname === "/v1/status") {
-        return sendJson(response, 200, { status: "ok", service: "voiceish-reseller-gateway", version: "0.4.0" }, origin, config);
+        return sendJson(response, 200, { status: "ok", service: "voiceish-reseller-gateway", version: "0.5.0" }, origin, config);
       }
       if (request.method === "POST" && url.pathname === "/v1/auth/register") {
         const result = await register(pool, await readJson(request));
@@ -167,14 +221,14 @@ export function createServer({ pool, voipMs, config }) {
         return sendJson(response, 200, result, origin, config);
       }
       if (request.method === "PUT" && /^\/v1\/admin\/tenants\/[^/]+\/voipms$/.test(url.pathname)) {
-        if (request.headers.authorization !== `Bearer ${config.adminToken}`) {
-          const error = new Error("Administrator authorization is required.");
-          error.statusCode = 401;
-          throw error;
-        }
+        await requirePlatformAdministrator(pool, request.headers.authorization, config);
         const tenantId = url.pathname.split("/")[4];
         const result = await provisionTenant(pool, tenantId, await readJson(request));
         return sendJson(response, 200, result, origin, config);
+      }
+      if (request.method === "GET" && url.pathname === "/v1/admin/tenants") {
+        await requirePlatformAdministrator(pool, request.headers.authorization, config);
+        return sendJson(response, 200, { accounts: await listTenants(pool) }, origin, config);
       }
 
       const identity = await authenticate(pool, request.headers.authorization);
@@ -217,22 +271,26 @@ export function createServer({ pool, voipMs, config }) {
   });
 }
 
-async function main() {
-  const config = loadConfig();
+export async function startRuntime(config = loadConfig()) {
   const pool = new Pool({ connectionString: config.databaseUrl });
   const voipMs = new VoipMsApi(config.voipMs);
   await pool.query("SELECT 1");
+  const { applyMigrations } = await import("./installer.mjs");
+  await applyMigrations(pool);
   const server = createServer({ pool, voipMs, config });
-  server.listen(config.port, config.host, () => {
-    console.log(`Voice-ish reseller gateway listening at ${config.publicUrl}`);
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(config.port, config.host, resolve);
   });
+  console.log(`Voice-ish reseller gateway listening at ${config.publicUrl}`);
   const shutdown = () => server.close(() => pool.end().finally(() => process.exit(0)));
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
+  return { server, pool, voipMs, config };
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  main().catch((error) => {
+  startRuntime().catch((error) => {
     console.error(error);
     process.exitCode = 1;
   });
