@@ -1,0 +1,10 @@
+CLAIM LEDGER,,,,,,,
+"Every campaign claim needs an evidence owner, level, qualifier, and approval state",,,,,,,
+ID,Claim,Evidence level,Required artifact,Qualifier,Status,Owner,Notes
+C-001,Native Android app sends through selected SIM/eSIM,Prototype,Device test matrix + screen recording,Limit to tested Android/carrier combinations,Draft,Engineering,Verify before campaign launch
+C-002,No app-side per-message meter,Architecture/pricing,Published license and service boundary,External carrier/provider fees apply,Approved,Product/Finance,Keep wording exact
+C-003,DIDs available for categories,Provider contract,Current geography/number inventory,Availability varies by region,Draft,Operations,Confirm before page publish
+C-004,No silent route fallback,Acceptance test,Automated route-unavailable tests,Applies to all supported adapters,Draft,Engineering,Release gate
+C-005,Route Readiness reduces operational surprises,Product test,Explainability/usability study,Not a carrier-reputation guarantee,Draft,Research,Do not convert into deliverability claim
+C-006,Synthetic warming improves carrier trust,None found,No controlled evidence found,Do not use,Rejected,Product/Legal,Red line
+C-007,Verification codes are protected,Security test,Threat model + test report,No guarantee of account security,Draft,Security,Complete before API beta

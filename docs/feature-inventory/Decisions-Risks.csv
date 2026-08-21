@@ -1,0 +1,14 @@
+DECISIONS & RISKS,,,,,,,
+Open choices and launch risks. Owners and dates are intentionally blank for discussion.,,,,,,,
+Type,Topic,Question / risk,Status,Impact,Owner,Decision date/gate,Proposed treatment
+Decision,Product name,Condone Numbers vs Voiceish-led architecture,Open,High,Founder,Before visual build,"Controls domain, app identity, campaign story"
+Decision,Default messenger,Optional advanced mode vs required full activation,Open,High,Product/Android,Prototype,Determines inbound/MMS reliability
+Decision,Hosted boundary,What remains functional after one-time APK purchase,Open,Critical,Product/Finance,Before pricing,Must sustain no-meter promise
+Decision,MMS launch,V1 or Release B after compatibility matrix,Open,Medium,Android,After device spike,Avoid overpromising
+Risk,Carrier terms,Consumer plan may prohibit intended automation/resale,Open,Critical,Legal/Product,Before beta,Attestation + supported-use policy
+Risk,Warming claims,Synthetic warmup has no controlled public evidence found,Mitigated,Critical,Marketing/Product,Now,Replace with Route Readiness
+Risk,Inbound Android,Default-role and OEM behavior can block inbox capture,Open,High,Android,Prototype,Capability test + supported device list
+Risk,Credential exposure,Existing extension stores provider credentials locally,Open,High,Security,Architecture,Move master credentials server-side
+Risk,One-time economics,Relay/support costs recur,Open,High,Finance,Before campaign,Optional fixed hosted tiers/self-host
+Risk,Wrong-route send,Identity mix-up damages trust,Mitigated,Critical,All,V1 gate,Route tuple invariant; fail closed
+Risk,Compliance,Commercial SMS requires consent/identification/opt-out,Open,Critical,Legal/Product,Before beta,Consent ledger + STOP suppression

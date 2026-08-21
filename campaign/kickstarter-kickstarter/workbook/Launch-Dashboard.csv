@@ -1,0 +1,19 @@
+KICKSTARTER KICKSTARTER,,,,,,,
+"Reusable campaign control workbook · replace blue-labeled assumptions, preserve formulas and evidence gates",,,,,,,
+
+Campaign,Voiceish / Condone Numbers example,Status,Discussion draft
+Funding goal,50000,Currency,USD
+Prelaunch followers,0,Launch date,TBD
+Email waitlist,0,Target conversion,0.05
+
+
+Calculated readiness,Value
+Weighted launch readiness,"=SUMPRODUCT('Asset Matrix'!$F$4:$F$15,'Asset Matrix'!$G$4:$G$15)/SUM('Asset Matrix'!$F$4:$F$15)"
+Validated claims,"=COUNTIF('Claim Ledger'!$F$4:$F$15,""Approved"")"
+Assets complete,"=COUNTIF('Asset Matrix'!$E$4:$E$15,""Complete"")"
+Projected reward contribution,=SUM('Reward Economics'!$K$4:$K$12)
+
+
+Voiceish example positioning,Come for the APK; stay for inexpensive categorized DIDs. Come for a DID; discover a route-safe inbox and native Android gateway.
+Required qualifier,"No app-side per-message meter. Carrier/provider charges, taxes, fair-use and plan restrictions still apply."
+Evidence red line,Do not claim synthetic SIM warming creates carrier trust or prevents suspension.

@@ -1,0 +1,11 @@
+CUSTOMER JOURNEYS,,,,,,
+"Two acquisition flywheels and the outcomes, product moments, proof, and expansion paths they require",,,,,,
+Entry,Stage,Customer job,Product moment,Proof of value,Primary risk,Design response
+DID-first,Discover,I need another identity,Choose Personal / Family / Private / Business,Clear recurring DID price,Confusing telecom jargon,Show examples by life context
+DID-first,Activate,Start quickly,Provision and open in Voiceish,Test inbound/outbound,Provisioning delay,Live status and honest ETA
+DID-first,Value,Keep identities separate,Route-bound inbox,Persistent local-identity badge,Wrong-number anxiety,No silent fallback
+DID-first,Expand,Use my mobile plan too,Add Android gateway APK,Guided capability test,Permissions friction,Native permission ladder
+APK-first,Discover,Avoid per-message app fees,Understand one-time APK boundary,Itemized external costs,‘Unlimited’ skepticism,No app-side per-message meter
+APK-first,Pair,Connect a phone,Scan signed QR; name subscriptions,First real test message,Inbound role failure,Explain companion/default mode
+APK-first,Value,Message from desktop safely,Compose with route lock,Delivery event timeline,Connectivity uncertainty,Readiness evidence
+APK-first,Expand,Separate roles/people,Add inexpensive DIDs,One inbox; separated histories,Route sprawl,Categories and permissions

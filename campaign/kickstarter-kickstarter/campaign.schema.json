@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/kickstarter-kickstarter/campaign.schema.json",
+  "title": "Kickstarter Kickstarter campaign",
+  "type": "object",
+  "required": ["project", "oneSentence", "audiences", "offers", "claims", "risks"],
+  "properties": {
+    "project": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["brief", "draft", "review", "approved", "launched", "closed"] },
+    "oneSentence": { "type": "string", "minLength": 20 },
+    "fundingGoal": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": { "type": "number", "exclusiveMinimum": 0 },
+        "currency": { "type": "string", "pattern": "^[A-Z]{3}$" }
+      }
+    },
+    "audiences": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/audience" } },
+    "offers": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/offer" } },
+    "claims": { "type": "array", "items": { "$ref": "#/$defs/claim" } },
+    "risks": { "type": "array", "items": { "$ref": "#/$defs/risk" } }
+  },
+  "$defs": {
+    "audience": {
+      "type": "object",
+      "required": ["name", "job", "objection"],
+      "properties": { "name": {"type":"string"}, "job": {"type":"string"}, "objection": {"type":"string"} }
+    },
+    "offer": {
+      "type": "object",
+      "required": ["name", "price", "included", "externalCosts"],
+      "properties": {
+        "name": {"type":"string"}, "price": {"type":"number","minimum":0},
+        "included": {"type":"array","items":{"type":"string"}},
+        "externalCosts": {"type":"array","items":{"type":"string"}}
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": ["id", "text", "status", "evidence", "qualifier"],
+      "properties": {
+        "id": {"type":"string"}, "text": {"type":"string"},
+        "status": {"enum":["draft","approved","rejected"]},
+        "evidence": {"type":"string"}, "qualifier": {"type":"string"}
+      }
+    },
+    "risk": {
+      "type": "object",
+      "required": ["topic", "impact", "mitigation", "residual"],
+      "properties": {
+        "topic": {"type":"string"}, "impact": {"enum":["low","medium","high","critical"]},
+        "mitigation": {"type":"string"}, "residual": {"type":"string"}
+      }
+    }
+  }
+}
+

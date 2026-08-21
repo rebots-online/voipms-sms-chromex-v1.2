@@ -1,0 +1,18 @@
+PROVIDER CAPABILITY MATRIX,,,,,,,,,,,
+"Discovery shortlist · public capabilities require commercial, coverage, reseller, privacy, and support validation before selection",,,,,,,,,,,
+Provider,Best fit,HLR / number intelligence,CNAM lookup,CNAM registration,STIR/SHAKEN,DIDs,SMS/MMS,Spam / branded,Reseller posture,Important note,Primary source
+Telnyx,Developer-first consolidated carrier,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Likely,"Strong first benchmark; lookup includes HLR-derived data, line type, LRN, ported status, and CNAM",https://telnyx.com/products/number-lookup
+Bandwidth,US carrier-grade / reseller voice,No public HLR focus,Yes,Yes,Yes,Yes,Yes,Yes,Yes,"Strong for higher-scale US voice, CNAM per-dip, and qualified provider hosted signing",https://www.bandwidth.com/products/cnam-caller-id/
+Twilio,Broad CPaaS and trust workflow,Number intelligence,Yes,Yes,Yes,Yes,Yes,Yes,Partner program,"Trust Hub combines KYC, CNAM, STIR/SHAKEN, Voice Integrity, and branded calling",https://www.twilio.com/docs/trust-hub
+Sinch,Global enterprise communications,Yes / lookup,Yes,Yes,Yes,Yes,Yes,Yes,Contract,Good global shortlist; validate product/coverage bundle commercially,https://developers.sinch.com/docs/number-lookup-api/overview
+Infobip,Global HLR-derived lookup,Yes,No public core,No public core,No public core,Yes,Yes,Yes,Contract,"Strong specialized HLR-derived lookup, roaming, porting, validity, and optional SIM-swap",https://www.infobip.com/docs/number-lookup
+Vonage,Reachability / roaming / identity,Yes,Check contract,Check contract,Check contract,Yes,Yes,Yes,Contract,Plan migration from Number Insight to Identity Insights before its announced sunset,https://developer.vonage.com/en/number-insight/overview
+VoIP.ms,Current low-cost DID adapter,No,Yes,Yes,Carrier/upstream,Yes,Yes,No,Channel partner,Eligible US DIDs can receive support-assisted CNAM update; inbound CNAM lookup is per-dip,https://wiki.voip.ms/article/Caller_ID
+Hiya,Reputation / branded calling,No,No,Business registry,No,No,No,Reputation signals,Business,Separate mobile-display and analytics ecosystem; not a PSTN carrier,https://www.hiya.com/products/connect/number-registration
+First Orion,Reputation / branded calling,No,No,Business registry,No,No,No,Reputation signals,Business,Free number registration plus paid branded calling/reputation monitoring,https://firstorion.com/
+TNS,Carrier analytics / call authentication,No,No,Registry participant,Yes / carrier,No,No,Reputation signals,Carrier,Call Guardian is carrier/analytics infrastructure; use direct relationship or Free Caller Registry,https://tnsi.com/solutions/communications/robocall-protection/
+
+
+Recommended sequence,"1. Retain VoIP.ms adapter. 2. Compare Telnyx vs Infobip/Vonage lookups on a lawful test set. 3. For outbound voice, RFP Telnyx/Bandwidth/Twilio for number ownership, A-level attestation, reseller KYC, CNAM, branded calling, E911, and porting."
+Architectural rule,The originating voice carrier controls call signing/attestation. Registration at one provider cannot authenticate a call originated through an unrelated provider.
+Terminology rule,"Use Number Intelligence in the product. Show field provenance, observed-at time, coverage, and unknown—not a single magical HLR truth."
