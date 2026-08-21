@@ -1,0 +1,13 @@
+APP FLOWS,,,,,,
+"State-level flow inventory for Android gateway, SaaS/Voiceish, and developer workflows",,,,,,
+Surface,Flow,Start state,User/system action,Success,Failure,Recovery
+Android,Pair gateway,Unpaired,Scan QR + device confirmation,Paired; token consumed,Expired/replayed token,Request fresh token
+Android,Discover subscriptions,Paired,Read active subscriptions,Named SIM/eSIM routes,No subscription / permission,Explain and re-test
+Android,Enable outbound,Route named,Send carrier test,Outbound ready,Carrier/device rejection,Show event and settings
+Android,Enable inbound,Outbound ready,Request default SMS role; inbound test,Full route ready,Role denied / inbound absent,Stay companion or retry
+Android,Relay message,Ready,Accept signed idempotent command,Local accepted/submitted event,Offline/paused/policy block,Queue within bounded TTL or fail
+Voiceish,Compose,Conversation open,Select/confirm locked identity,Message queued,Route unavailable,Block with evidence
+Voiceish,Switch identity,Conversation open,Explicit new-route action,New route-bound thread,Accidental switch,Confirmation + visual morph
+SaaS,Inspect readiness,Device/route selected,Open evidence panel,Understand ready/blockers,Stale heartbeat,Timestamp and re-test
+Developer,Send SMS,Valid scoped key,POST route + to + content + idempotency,Message ID + event stream,Duplicate/retry,Return original result
+Developer,Verify number,Consent/risk pass,Create challenge; check code,Verified event,Wrong/expired/limited,Generic error + safe retry

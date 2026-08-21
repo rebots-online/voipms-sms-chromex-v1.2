@@ -1,0 +1,15 @@
+ASSET MATRIX,,,,,,,
+"Campaign assets, weights, and completion scores feed the Launch Dashboard",,,,,,,
+ID,Asset,Purpose,Owner,Status,Weight,Completion,Acceptance note
+A-001,Hero still,Android + SaaS route selection in one image,Design,Not started,12,0,Must match approved product direction
+A-002,90-second campaign video,Problem → route lock → DID/APK flywheel,Founder/Video,Not started,15,0,Use real prototype footage where possible
+A-003,Android pairing demo,"QR, SIM naming, capability test",Engineering,Not started,10,0,Show failure recovery
+A-004,Voiceish inbox demo,Route-bound conversation and events,Engineering,Not started,10,0,Never fake delivery states
+A-005,Architecture visual,"Device, control plane, adapters, clients",Design,Draft,6,0.25,Explain credential boundary
+A-006,Reward table,Inclusions and ongoing external costs,Finance,Draft,8,0.25,Avoid hidden recurring service
+A-007,Budget and timeline,Use-of-funds and milestones,Founder,Not started,8,0,Include contingency
+A-008,Risks and challenges,"Carrier, Android, provider, support",Legal/Product,Draft,9,0.25,Plain language
+A-009,FAQ,"Sideload, plans, MMS, privacy, refunds",Product,Not started,6,0,Answer likely objections
+A-010,Privacy/security note,"Keys, retention, revocation",Security,Not started,6,0,No absolute claims
+A-011,Prelaunch page,Email capture and survey,Growth,Not started,5,0,Segment DID-first vs APK-first
+A-012,Press kit,"Logo, screenshots, facts, founder bio",Growth,Not started,5,0,Single current fact sheet

@@ -1,0 +1,22 @@
+{
+  "project": "Condone Numbers + Voiceish",
+  "status": "brief",
+  "oneSentence": "A route-explicit Voiceish inbox and native Android gateway for using categorized DIDs and SIM/eSIM identities without an app-side per-message meter.",
+  "fundingGoal": { "amount": 50000, "currency": "USD" },
+  "audiences": [
+    { "name": "Privacy organizer", "job": "Separate personal, family, private, and business messages", "objection": "Will I accidentally send from the wrong number?" },
+    { "name": "Small-business owner", "job": "Use a phone plan and DIDs from a desktop inbox", "objection": "What costs recur and what do carriers allow?" }
+  ],
+  "offers": [
+    { "name": "Early APK", "price": 49, "included": ["Native Android gateway license"], "externalCosts": ["Carrier plan and usage", "Optional hosted service", "Optional DIDs"] },
+    { "name": "APK + DID setup", "price": 79, "included": ["Gateway license", "One DID setup service"], "externalCosts": ["Ongoing DID/provider charges", "Carrier plan and usage"] }
+  ],
+  "claims": [
+    { "id": "C-001", "text": "No app-side per-message meter", "status": "approved", "evidence": "License and architecture boundary", "qualifier": "Carrier/provider charges, taxes, fair-use and plan restrictions still apply" },
+    { "id": "C-002", "text": "Synthetic SIM warming creates carrier trust", "status": "rejected", "evidence": "No controlled public evidence found", "qualifier": "Do not use" }
+  ],
+  "risks": [
+    { "topic": "Carrier plan restrictions", "impact": "critical", "mitigation": "Plan attestation, permitted-use policy, caps, and consent controls", "residual": "Carrier discretion remains" },
+    { "topic": "Android inbound compatibility", "impact": "high", "mitigation": "Default-role capability test and supported-device matrix", "residual": "OEM behavior varies" }
+  ]
+}

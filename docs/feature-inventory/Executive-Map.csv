@@ -1,0 +1,20 @@
+CONDONE NUMBERS / VOICEISH,,,,,,,
+"Decision workbook · product boundary, reference coverage, research findings, and launch choices",,,,,,,
+
+NORTH STAR,,,,,,,
+Every message uses an explicit route: transport + local identity + remote identity. No silent fallback.,,,,,,,
+
+
+REFERENCE FEATURES,PROPOSED V1,LATER / CONDITIONAL,EXCLUDED / REFRAMED
+"=COUNTIF('Feature Inventory'!$E$4:$E$88,""Documented"")","=COUNTIF('Feature Inventory'!$F$4:$F$88,""V1"")","=COUNTIF('Feature Inventory'!$F$4:$F$88,""Later"")","=COUNTIF('Feature Inventory'!$F$4:$F$88,""Exclude"")"
+Documented,,,
+Verification/API,Route-locked inbox,MMS after compatibility test,Synthetic SIM warming
+Android gateway,Native Kotlin gateway,Reseller console,Silent transport fallback
+
+
+Commercial flywheel,Entry,Experience,Expansion
+DID-first,Choose family/private/business DID,Voiceish route-separated inbox,Buy gateway APK; add SIM/eSIM
+APK-first,Buy native Android gateway,No app-side per-message meter,Add inexpensive DIDs and collaborators
+
+Warming research verdict,Evidence,Product decision
+"Gradual pacing can be an operational safeguard, but no controlled public evidence was found that synthetic SIM-to-SIM traffic creates carrier trust.","Marketing claims + founder explanations; carrier terms emphasize use category, consent, and unwanted/high-volume controls.","No fake warming. Use explainable Route Readiness, consent proof, canaries, caps, cool-downs, and fail-closed rules."

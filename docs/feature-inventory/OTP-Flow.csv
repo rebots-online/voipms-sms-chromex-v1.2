@@ -1,0 +1,13 @@
+OTP / PHONE VERIFICATION,,,,,,
+"Copy, policy, server behavior, and failure recovery for a safer verification experience",,,,,,
+Step,State,Recommended customer copy,Server behavior,Primary action,Priority,Implementation note
+1,Phone entry,Enter the mobile number you can access now. We’ll send one text with a 6-digit code. Message and carrier rates may apply.,Normalize to E.164; create risk context,Continue,P0,Do not reveal account existence
+2,Consent + risk,We’ll use this number only for this verification unless you choose otherwise.,"Check tenant, number, IP, device, route limits",Send code,P0,Separate marketing consent
+3,Sending,Sending your code…,Use Idempotency-Key; bind challenge to route,Wait,P0,Never auto-change identity
+4,Code entry,Enter the 6-digit code sent to ••• ••• 0142. It expires in 5 minutes.,Store keyed hash only; five attempts,Verify,P0,Newest-code behavior documented
+5,Wrong code,That code doesn’t match. Check the newest message and try again.,Constant-time compare; decrement attempts,Try again,P0,Generic public error
+6,Resend wait,You can request another code in 24 seconds.,30-second minimum resend delay,Disabled resend,P0,Do not reset timer on refresh
+7,Expired,That code has expired. Request a new one to continue.,Invalidate challenge,Send a new code,P0,No reuse
+8,Limited,We can’t send another code right now. Wait a little and try again.,Default max five sends/number/hour plus layered caps,Try later,P0,Do not expose threshold details
+9,Route unavailable,This number can’t receive a code from the selected route right now. Choose another verified method or try later.,Fail closed; record internal reason,Use another method,P0,No silent fallback
+10,Success,Number verified.,Atomic one-time consume; emit redacted event,Continue,P0,Audit challenge ID only
