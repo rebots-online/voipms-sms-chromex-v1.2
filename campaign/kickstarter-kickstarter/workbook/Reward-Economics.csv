@@ -1,0 +1,12 @@
+REWARD ECONOMICS,,,,,,,,,,,
+Editable assumptions in blue. Contribution is calculated before fixed campaign costs and taxes.,,,,,,,,,,,
+Tier,Reward,Pledge,Qty,COGS,Fees,Fulfillment,Support reserve,Tax reserve,Other,Contribution,Notes
+R1,Supporter / updates,10,1,0,1,0.5,0,0,0,=(C4-E4-F4-G4-H4-I4-J4)*D4,Digital thank-you
+R2,Early APK,49,250,4,3,2,0,0,0,=(C5-E5-F5-G5-H5-I5-J5)*D5,One household/device license
+R3,APK + first DID setup,79,300,8,4,3,8,0,0,=(C6-E6-F6-G6-H6-I6-J6)*D6,DID recurring costs after included period disclosed
+R4,Family identity pack,129,150,15,7,5,12,0,0,=(C7-E7-F7-G7-H7-I7-J7)*D7,Multiple categorized identities
+R5,Small-business founder pack,249,100,35,12,10,20,0,0,=(C8-E8-F8-G8-H8-I8-J8)*D8,Gateway + hosted-service credit
+R6,Self-host pioneer,599,30,90,20,15,35,0,0,=(C9-E9-F9-G9-H9-I9-J9)*D9,License boundary and maintenance explicit
+R7,Reseller design partner,1499,10,220,40,35,90,0,0,=(C10-E10-F10-G10-H10-I10-J10)*D10,No exclusivity unless contracted
+R8,Add-on device,35,100,3,2,1,0,0,0,=(C11-E11-F11-G11-H11-I11-J11)*D11,Only valid with eligible tier
+R9,Add-on DID setup,20,150,2,1,1,5,0,0,=(C12-E12-F12-G12-H12-I12-J12)*D12,Does not include ongoing provider costs

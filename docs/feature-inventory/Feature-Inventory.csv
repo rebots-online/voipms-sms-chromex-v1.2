@@ -1,0 +1,67 @@
+FEATURE INVENTORY,,,,,,,
+"Reference documentation, supplied Voiceish behavior, and proposed product decisions. Filter mentally by Source status and Release.",,,,,,,
+Domain,Surface,Feature,Reference behavior / need,Source status,Release,Condone / Voiceish treatment,Source URL or artifact
+Onboarding,Android,APK sideload install,Install Android app outside store,Documented,V1,Native signed APK with checksum and update verification,https://docs.textlinksms.com/
+Onboarding,Android,QR pairing,Pair device from dashboard,Documented,V1,Single-use signed enrollment token,https://textlinksms.com/how-textlink-works
+Onboarding,Android,Permission setup,Grant required Android permissions,Documented,V1,Progressive permission ladder plus capability tests,https://docs.textlinksms.com/
+Onboarding,Android,SIM auto-connect,Discover active SIM after pairing,Documented,V1,Discover all subscriptions; require friendly names,https://textlinksms.com/how-textlink-works
+Onboarding,Android,Multi-SIM,Support physical SIM and eSIM,Documented,V1,Per-subscription route and readiness,https://textlinksms.com/faq
+Onboarding,Android,Two-SIM recommendation,Best results with two or fewer SIMs/device,Documented,V1,"Show tested-device guidance, not a hard rule",https://textlinksms.com/faq
+Messaging,Core,Outbound SMS,Send from connected Android SIM,Documented,V1,"Explicit route, idempotency, local acceptance event",https://docs.textlinksms.com/api
+Messaging,Core,Inbound SMS,Receive and forward inbound messages,Documented,V1,Default-role test and inbound observation test,https://docs.textlinksms.com/webhooks
+Messaging,Core,MMS,Long or media messages,Documented,Later,Compatibility-tested default-messenger mode,https://textlinksms.com/faq
+Messaging,Voiceish,DID messaging,Send/reply through VoIP.ms DID,Supplied source,V1,Server-side provider adapter; route pinned,uploaded Voiceish v0.3.0 README
+Messaging,Voiceish,MMS attachments,Up to three compatible attachments,Supplied source,Later,Provider- and device-specific capability matrix,uploaded Voiceish v0.3.0 README
+Messaging,Voiceish,VoxVolley audio,Record 20-second mono 16k WAV,Supplied source,Later,Retain as optional rich-message adapter,uploaded Voiceish v0.3.0 README
+Messaging,Voiceish,Text-to-speech,Generate/play voice content,Supplied source,Later,Accessibility-first; local where practical,uploaded Voiceish v0.3.0 README
+Messaging,Core,Route lock,Reply uses same local identity,Supplied source,V1,System invariant; no silent fallback,uploaded Voiceish v0.3.0 README
+Inbox,SaaS,Unified chat,Web conversations and reply,Documented,V1,Unified display with route-separated histories,https://docs.textlinksms.com/chat-app
+Inbox,SaaS,Contacts,Manage contact records,Documented,V1,Contact can link multiple route-bound threads,https://docs.textlinksms.com/chat-app
+Inbox,SaaS,Contact tags,Tag contacts for organization,Documented,Later,Purpose-aware tags; tag-change webhook,https://docs.textlinksms.com/chat-app
+Inbox,SaaS,Outreach groups,Group contacts for outreach,Documented,Later,Only consented segments with suppression,https://docs.textlinksms.com/chat-app
+API,Platform,REST send API,Bearer-auth SMS endpoint,Documented,V1,"OpenAPI 3.1, scoped keys, idempotency",https://docs.textlinksms.com/api
+API,Platform,Inbound webhook,Notify on received message,Documented,V1,Signed webhook with replay protection,https://docs.textlinksms.com/webhooks
+API,Platform,Dispatch webhook,Notify when dispatched,Documented,V1,Normalized delivery event model,https://docs.textlinksms.com/webhooks
+API,Platform,Failure webhook,Notify on failed send,Documented,V1,Redacted reason code and retryability,https://docs.textlinksms.com/webhooks
+API,Platform,Tag webhook,Notify on tag change,Documented,Later,Purpose-aware CRM event,https://docs.textlinksms.com/webhooks
+API,Platform,Webhook secret,Optional endpoint authentication,Documented,V1,Mandatory HMAC signing for production,https://docs.textlinksms.com/webhooks
+Verification,API,Send code,Create and send OTP,Documented,V1,"Hashed challenge, layered limits, explicit route",https://textlinksms.com/verificationapi
+Verification,API,Check code,Validate OTP,Documented,V1,"Atomic one-time consume, generic errors",https://docs.textlinksms.com/api
+Verification,API,Expiry config,60 seconds to one hour; default five minutes,Documented,V1,Default five minutes; policy-bounded override,https://textlinksms.com/verificationapi
+Verification,API,Hourly cap,Default five codes per number/hour,Documented,V1,Layered number/tenant/IP/device/route limits,https://textlinksms.com/verificationapi
+Verification,API,Template,Brand and code placeholders,Documented,V1,Locale templates; code placeholder required,https://textlinksms.com/verificationapi
+Verification,UX,Masked destination,Show where code was sent,Proposed,V1,Masked E.164 display and edit action,PRD §8
+Verification,UX,Resend timer,Prevent rapid repeats,Proposed,V1,30-second timer; stable challenge semantics,PRD §8
+Verification,Security,Attempt limit,Cap guesses per challenge,Proposed,V1,Five attempts; invalidate on success/exhaustion,PRD §8
+Verification,Security,No code in logs,Protect secret value,Proposed,V1,Keyed hash only; webhook excludes code,PRD §8
+Verification,Security,Abuse scoring,Use layered risk context,Proposed,V1,Fail safe; do not expose account existence,PRD §8
+Integrations,CRM,GoHighLevel,Connect SMS to GHL,Documented,Later,Public API connector; no special message path,https://docs.textlinksms.com/gohighlevel
+Integrations,No-code,Zapier,Automations through Zapier,Documented,Later,Connector generated from stable API,https://docs.textlinksms.com/zapier
+Integrations,No-code,Make,Automations through Make,Documented,Later,Connector generated from stable API,https://docs.textlinksms.com/make
+Teams,SaaS,Team logins,Invite workspace users,Documented,Later,Role- and route-scoped permissions,https://docs.textlinksms.com/team
+Teams,SaaS,Subaccounts,Separate customer/workspace access,Documented,Later,True tenant boundaries and audit,https://textlinksms.com/pricing
+Operations,SaaS,Dashboard tests,Test connected services,Documented,V1,Capability checks with evidence timestamps,https://docs.textlinksms.com/dashboard
+Operations,SaaS,Device management,List/configure/delete devices,Documented,V1,"Revoke keys, route permissions, last heartbeat",https://docs.textlinksms.com/dashboard
+Operations,SaaS,Delivery timeline,Trace message states,Proposed,V1,Queued/accepted/submitted/delivered/failed/unknown,PRD §10
+Operations,SaaS,Webhook replay,Retry failed endpoint deliveries,Proposed,V1,Signed replay with idempotent event IDs,PRD §12
+Readiness,Policy,21-day warmup,Gradually ramp new SIM traffic,Documented,Exclude,Do not generate synthetic chats,https://textlinksms.com/faq
+Readiness,Policy,Synthetic peer traffic,Devices text each other to build reputation,Founder statement,Exclude,Unsupported effectiveness; possible terms risk,https://appsumo.com/products/textlink/questions/what-is-warm-up-do-you-have-multiple-1438109/
+Readiness,Policy,Pacing,Intervals and adjustable caps,Documented,V1,Operational safeguard; never carrier-trust claim,https://textlinksms.com/recommended-setup
+Readiness,Policy,Carrier-plan attestation,Confirm intended use is permitted,Proposed,V1,"Store date, plan class, and acknowledgment",PRD §9
+Readiness,Policy,Consent ledger,Record source/purpose/proof,Proposed,V1,Required before commercial queue insertion,https://crtc.gc.ca/eng/com500/faq500.htm
+Readiness,Policy,STOP suppression,Honor opt-out automatically,Proposed,V1,Purpose-aware immediate suppression,https://crtc.gc.ca/eng/com500/faq500.htm
+Readiness,Policy,Canary batches,Small real opted-in sends first,Proposed,V1,Stop on failure/complaint thresholds,PRD §9
+Readiness,Policy,Cool-down,Pause after anomalous failures,Proposed,V1,Explain trigger; manual and timed recovery,PRD §9
+Readiness,Policy,Internal score,Explain route readiness,Proposed,V1,Never label carrier reputation,PRD §9
+Pricing,Commercial,Unlimited platform messages,No TextLink-side message charge,Documented,Reword,No app-side per-message meter; external costs apply,https://textlinksms.com/pricing
+Pricing,Commercial,One-time APK,Buy native gateway license,Proposed,V1,Separate optional hosted service,PRD §15
+Pricing,Commercial,DID recurring service,Rent categorized numbers,Proposed,V1,"Provider costs, taxes, usage disclosed",PRD §15
+Pricing,Commercial,Hosted fixed tiers,Relay and sync service,Proposed,V1,"Price by workspace/device/support, not messages",PRD §15
+Security,Android,Local credentials,Current extension stores local credentials,Supplied source,Replace,No master provider credential in client,uploaded Voiceish v0.3.0 README
+Security,Android,Device keys,Per-device asymmetric identity,Proposed,V1,"Keystore-backed, revocable",https://developer.android.com/privacy-and-security/keystore
+Security,Platform,API-key scopes,Limit keys by action/route,Proposed,V1,"Display once, rotate, audit",PRD §14
+Security,Platform,Tenant isolation,Separate workspace data,Proposed,V1,App and DB enforcement,PRD §12
+Distribution,Android,Signed updates,Verify releases,Proposed,V1,"Checksum, signature, rollback safety",PRD §7
+Accessibility,Shared,Large targets,Touch and keyboard usability,Proposed,V1,48dp Android; full keyboard paths web,PRD §10
+Accessibility,Shared,Reduced motion,Limit nonessential animation,Proposed,V1,Motion conveys state only,PRD §10
+Brand,Shared,Signal observatory,Distinct visual system,Proposed,V1,"Midnight ink, copper, cyan, evidence-driven signals",PRD §10

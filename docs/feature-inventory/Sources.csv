@@ -1,0 +1,20 @@
+SOURCES,,,,
+Public documentation and primary references used in the discussion draft. Accessed 2026-08-20.,,,,
+Publisher,Title,URL / artifact,Evidence class,Use / caveat
+TextLink,Documentation root,https://docs.textlinksms.com/,Product reference,"Android setup, dashboard, API, integrations"
+TextLink,How it works,https://textlinksms.com/how-textlink-works,Product marketing,Pairing and setup timing claims
+TextLink,FAQ,https://textlinksms.com/faq,Product marketing,"SIM support, volumes, warmup, MMS statement"
+TextLink,Pricing,https://textlinksms.com/pricing,Product marketing,Unlimited/platform offer wording
+TextLink,Verification API,https://textlinksms.com/verificationapi,Product reference,"Expiry, rate, template behavior"
+TextLink,Warmup discussion,https://appsumo.com/products/textlink/questions/what-is-warm-up-do-you-have-multiple-1438109/,Founder/user discussion,Synthetic device-to-device description; anecdotal
+Android,SmsManager,https://developer.android.com/reference/android/telephony/SmsManager,Primary documentation,Subscription-scoped SMS sending
+Android,Telephony intents,https://developer.android.com/reference/android/provider/Telephony.Sms.Intents,Primary documentation,Default-app delivery behavior
+Android,Foreground service types,https://developer.android.com/about/versions/14/changes/fgs-types-required,Primary documentation,Service-type constraints
+Android,Keystore,https://developer.android.com/privacy-and-security/keystore,Primary documentation,Non-exportable key material
+CTIA,Messaging principles,https://api.ctia.org/wp-content/uploads/2023/05/230512-CTIA-Messaging-Principles-and-Best-Practices-FINAL.pdf,Industry primary,A2P distinction and consumer protection
+T-Mobile,Terms,https://www.t-mobile.com/responsibility/legal/terms-and-conditions,Carrier primary,Automated/mass/M2M/resale restrictions
+Verizon,Email-to-text FAQ,https://www.verizon.com/support/email-to-text-faqs/,Carrier primary,Low-volume consumer vs A2P framing
+Rogers,Spam protection,https://www.rogers.com/support/mobility/prevent-unsolicited-or-nuisance-calls-and-texts,Carrier primary,Network scanning/filtering
+CRTC,CASL FAQ,https://crtc.gc.ca/eng/com500/faq500.htm,Regulator primary,"Consent, identification, unsubscribe"
+FCC,Calls and texts rules,https://www.fcc.gov/rules-political-campaign-calls-and-texts,Regulator primary,Consent expectations for robotexts
+Voiceish,v0.3.0 package,voipms-voiceish-chrome-extension-v0.3.0-voxvolley-mit-20260802.zip,Supplied source,"Current routes, DID discovery, media, security limitation"
